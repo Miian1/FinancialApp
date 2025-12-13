@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FamilyFinance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              background: 'var(--bg-background)',
+              surface: 'var(--bg-surface)',
+              border: 'var(--border-color)',
+              primary: 'var(--text-primary)',
+              secondary: 'var(--text-secondary)',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        /* Light Theme Defaults */
+        --bg-background: #F3F4F6; /* gray-100 */
+        --bg-surface: #FFFFFF;    /* white */
+        --border-color: #E5E7EB;  /* gray-200 */
+        --text-primary: #111827;  /* gray-900 */
+        --text-secondary: #6B7280;/* gray-500 */
+      }
+
+      [data-theme='dark'] {
+        /* Dark Theme Defaults */
+        --bg-background: #0B0C15;
+        --bg-surface: #161722;
+        --border-color: #1F2937;  /* gray-800 equivalent */
+        --text-primary: #FFFFFF;
+        --text-secondary: #9CA3AF; /* gray-400 */
+      }
+
+      body {
+        background-color: var(--bg-background);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      /* Web View (Desktop) - Themed Scrollbar */
+      @media (min-width: 769px) {
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: var(--bg-background);
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #3730a3; /* Indigo 800 */
+          border-radius: 4px;
+          border: 2px solid var(--bg-background); /* Creates padding effect */
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #4f46e5; /* Indigo 600 */
+        }
+      }
+
+      /* Mobile View - Hide Scrollbar completely */
+      @media (max-width: 768px) {
+        * {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        ::-webkit-scrollbar {
+          display: none;
+        }
+      }
+
+      /* Utilities */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Remove number input arrows */
+      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+      }
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
+    "react/": "https://esm.sh/react@^19.2.1/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.560.0",
+    "recharts": "https://esm.sh/recharts@^3.5.1",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.87.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
