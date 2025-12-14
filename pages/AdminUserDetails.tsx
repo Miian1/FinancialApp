@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
 import { supabase } from '../services/supabaseClient';
 import { Profile, Account, Transaction } from '../types';
 import { ArrowLeft, User, Shield, Calendar, Mail, CreditCard, Ban, CheckCircle, ArrowDownLeft, ArrowUpRight, Search } from 'lucide-react';
@@ -8,6 +9,7 @@ import { format } from 'date-fns';
 export const AdminUserDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { goBack } = useApp();
     const [user, setUser] = useState<Profile | null>(null);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -60,7 +62,7 @@ export const AdminUserDetails: React.FC = () => {
             {/* Header / Nav */}
             <div className="flex items-center gap-4">
                 <button 
-                    onClick={() => navigate('/admin')} 
+                    onClick={goBack} 
                     className="p-2 bg-surface rounded-xl border border-border text-secondary hover:text-primary transition-colors"
                 >
                     <ArrowLeft size={20} />

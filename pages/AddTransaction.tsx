@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Search, X, User, CreditCard, Users, Wallet, ShoppingB
 import { Profile, Category } from '../types';
 
 export const AddTransaction: React.FC = () => {
-  const { profile, accounts, groupAccounts, categories, transactions, refreshData } = useApp();
+  const { profile, accounts, groupAccounts, categories, transactions, refreshData, goBack } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const mode = (location.state as { mode: 'personal' | 'fund' | 'admin_user' })?.mode || 'personal';
@@ -67,7 +67,7 @@ export const AddTransaction: React.FC = () => {
      const accountTable = isGroup ? 'group_accounts' : 'accounts';
      const account = [...accounts, ...groupAccounts].find(a => a.id === accountId);
      if (account) { const newBalance = type === 'income' ? Number(account.balance) + parseFloat(amount) : Number(account.balance) - parseFloat(amount); await supabase.from(accountTable).update({ balance: newBalance }).eq('id', accountId); }
-     await refreshData(); navigate(-1);
+     await refreshData(); goBack();
   };
 
   const filteredCategories = categories.filter(c => c.type === type);
@@ -84,7 +84,7 @@ export const AddTransaction: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col h-[100dvh] w-full">
        <div className="flex items-center justify-between p-4 md:p-6 bg-background z-10 shrink-0 border-b border-border">
-         <button onClick={() => navigate(-1)} className="flex items-center text-secondary hover:text-primary transition-colors"><ArrowLeft size={20} className="mr-2" /><span className="text-base md:text-lg font-medium">Cancel</span></button>
+         <button onClick={goBack} className="flex items-center text-secondary hover:text-primary transition-colors"><ArrowLeft size={20} className="mr-2" /><span className="text-base md:text-lg font-medium">Cancel</span></button>
          <h2 className="text-primary font-bold text-sm md:text-lg hidden sm:block">{getTitle()}</h2>
          <div className="w-16 hidden sm:block"></div>
        </div>

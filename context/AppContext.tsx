@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { Profile, Account, GroupAccount, Category, Transaction, Notification } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface AppState {
   user: any | null;
@@ -16,6 +17,9 @@ interface AppState {
   setViewMode: (mode: 'personal' | 'family') => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  goBack: () => void;
+  exitModalOpen: boolean;
+  setExitModalOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppState>({
@@ -32,6 +36,9 @@ const AppContext = createContext<AppState>({
   setViewMode: () => {},
   theme: 'dark',
   toggleTheme: () => {},
+  goBack: () => {},
+  exitModalOpen: false,
+  setExitModalOpen: () => {},
 });
 
 export const useApp = () => useContext(AppContext);
@@ -46,6 +53,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'personal' | 'family'>('personal');
+  const [exitModalOpen, setExitModalOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Theme State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -62,6 +71,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Go Back Logic
+  const goBack = useCallback(() => {
+    // Check React Router history state index. If > 0, we can go back.
+    const state = window.history.state as { idx: number } | null;
+    if (state && state.idx > 0) {
+        navigate(-1);
+    } else {
+        // No history stack, prompt exit
+        setExitModalOpen(true);
+    }
+  }, [navigate]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -84,7 +105,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProfile(currentProfile);
 
       // 2. Configure Accounts Query
-      // Using 'profile:profiles(*)' to join profile data. Requires FK from accounts.user_id to profiles.id
       let accountsQuery = supabase.from('accounts').select('*, profile:profiles(*)');
       
       if (currentProfile?.role !== 'admin') {
@@ -101,7 +121,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notificationsRes
       ] = await Promise.all([
         accountsQuery,
-        supabase.from('group_accounts').select('*'), // Fetch all groups to allow joining
+        supabase.from('group_accounts').select('*'),
         supabase.from('categories').select('*'),
         supabase.from('transactions').select(`
           *,
@@ -120,7 +140,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (groupAccountsRes.data) setGroupAccounts(groupAccountsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
       
-      // Combine Personal and Group Transactions
       const allTransactions = [
           ...(personalTxRes.data || []),
           ...(groupTxRes.data || [])
@@ -171,7 +190,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       viewMode,
       setViewMode,
       theme,
-      toggleTheme
+      toggleTheme,
+      goBack,
+      exitModalOpen,
+      setExitModalOpen
     }}>
       {children}
     </AppContext.Provider>

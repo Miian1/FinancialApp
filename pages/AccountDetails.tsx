@@ -16,7 +16,7 @@ const formatCurrency = (amount: number, showFull: boolean) => {
 export const AccountDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { accounts, groupAccounts, transactions, profile, theme } = useApp();
+  const { accounts, groupAccounts, transactions, profile, theme, goBack } = useApp();
   const [showFullNumbers, setShowFullNumbers] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -55,7 +55,7 @@ export const AccountDetails: React.FC = () => {
     <div className="space-y-4 md:space-y-6 animate-fade-in pb-20">
       <div className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => navigate(-1)} className="p-2 bg-surface rounded-xl border border-border text-secondary hover:text-primary transition-colors flex-shrink-0"><ArrowLeft size={18} /></button>
+            <button onClick={goBack} className="p-2 bg-surface rounded-xl border border-border text-secondary hover:text-primary transition-colors flex-shrink-0"><ArrowLeft size={18} /></button>
             <div className="flex items-center gap-3 min-w-0">
                 <div className="flex-shrink-0">
                     {!isGroup && (<div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full p-0.5 bg-gradient-to-br from-indigo-500 to-purple-600"><img src={accountOwner?.avatar || `https://ui-avatars.com/api/?name=${accountOwner?.name || account.name}&background=random`} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-background" /></div>)}

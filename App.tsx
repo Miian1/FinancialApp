@@ -17,7 +17,7 @@ import { AdminUserDetails } from './pages/AdminUserDetails';
 import { AccountDetails } from './pages/AccountDetails';
 import { ProfilePage } from './pages/Profile';
 import { EditProfile } from './pages/EditProfile';
-import { Settings } from './pages/Settings'; // New Import
+import { Settings } from './pages/Settings';
 
 // Login Component
 const Login: React.FC = () => {
@@ -53,7 +53,6 @@ const Login: React.FC = () => {
           password
         });
         if (error) throw error;
-        // Navigation is handled by the auth listener in AppProvider/Layout or redirection logic
         navigate('/');
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -169,8 +168,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export default function App() {
   return (
-    <AppProvider>
-      <HashRouter>
+    <HashRouter>
+      <AppProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -187,7 +186,7 @@ export default function App() {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </HashRouter>
-    </AppProvider>
+      </AppProvider>
+    </HashRouter>
   );
 }

@@ -16,7 +16,8 @@ import {
   X,
   LayoutGrid,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut as LogOutIcon
 } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label, collapsed, badgeCount }: { to: string, icon: any, label: string, collapsed: boolean, badgeCount?: number }) => (
@@ -62,7 +63,7 @@ const MobileNavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label
 );
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile, notifications } = useApp();
+  const { profile, notifications, exitModalOpen, setExitModalOpen } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMobileNotif, setShowMobileNotif] = useState(false);
@@ -97,6 +98,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleExitApp = () => {
+      // Browsers often block window.close(), so we redirect or inform user
+      try {
+          window.close();
+      } catch (e) {
+          console.log("Window close blocked");
+      }
+      // Fallback
+      window.location.href = "about:blank";
+  };
 
   return (
     // App Shell: Fixed height using dvh for mobile browsers
@@ -258,6 +270,33 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <MobileNavItem to="/profile" icon={User} label="Profile" />
         </div>
       </div>
+
+      {/* Exit Confirmation Modal */}
+      {exitModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setExitModalOpen(false)}>
+              <div className="bg-surface rounded-3xl p-6 w-full max-w-sm border border-border shadow-2xl relative text-center" onClick={(e) => e.stopPropagation()}>
+                  <div className="w-14 h-14 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-4 mx-auto">
+                      <LogOutIcon size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-primary mb-2">Close App?</h3>
+                  <p className="text-secondary text-sm mb-6">Are you sure you want to exit the application?</p>
+                  <div className="flex gap-3">
+                      <button 
+                          onClick={() => setExitModalOpen(false)}
+                          className="flex-1 py-3 rounded-xl border border-border text-secondary font-medium hover:bg-primary/5 transition-colors"
+                      >
+                          Cancel
+                      </button>
+                      <button 
+                          onClick={handleExitApp}
+                          className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30"
+                      >
+                          Exit
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };
