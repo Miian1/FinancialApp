@@ -87,51 +87,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+      const currentUser = session?.user || null;
+      setUser(currentUser);
 
-      if (!session?.user) {
+      if (!currentUser) {
         setLoading(false);
         return;
       }
 
-      // 1. Fetch Profile first to check role
+      // 1. Fetch Profile
       let { data: profileRes, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', currentUser.id)
         .single();
       
       // Self-healing: Create profile if missing in DB but user exists in Auth (e.g. Google Login first time)
       if (!profileRes) {
-          // Google often provides 'full_name' or 'name', and 'avatar_url' or 'picture'
-          const meta = session.user.user_metadata || {};
-          const name = meta.name || meta.full_name || session.user.email?.split('@')[0] || 'User';
+          console.log("Profile missing for user, attempting creation:", currentUser.id);
+          
+          const meta = currentUser.user_metadata || {};
+          // Prioritize meta.name, then full_name, then email username
+          const name = meta.name || meta.full_name || currentUser.email?.split('@')[0] || 'User';
           const avatar = meta.avatar_url || meta.picture || null;
 
-          console.log("Creating new profile for user:", session.user.id);
-
-          const { error: insertError } = await supabase.from('profiles').insert({
-              id: session.user.id,
-              email: session.user.email,
+          // Using UPSERT to avoid race conditions if multiple tabs/hooks try to create
+          const { data: newProfile, error: insertError } = await supabase.from('profiles').upsert({
+              id: currentUser.id,
+              email: currentUser.email,
               name: name,
               role: 'member',
               avatar: avatar,
               is_suspended: false
-          });
+          }, { onConflict: 'id' }).select().single();
 
-          if (!insertError) {
-              // Construct a temporary profile object to use immediately
-              profileRes = {
-                  id: session.user.id,
-                  email: session.user.email!,
-                  name: name,
-                  role: 'member',
-                  avatar: avatar,
-                  created_at: new Date().toISOString(),
-                  is_suspended: false
-              } as unknown as Profile; 
+          if (!insertError && newProfile) {
+              profileRes = newProfile;
+              console.log("Profile created successfully:", newProfile);
           } else {
               console.error("Error creating profile:", insertError);
+              // If upsert fails (e.g. RLS), we might create a temporary local profile to allow UI to render
+              // This acts as a fallback so the app doesn't crash
+              if (insertError) {
+                  profileRes = {
+                    id: currentUser.id,
+                    email: currentUser.email!,
+                    name: name,
+                    role: 'member',
+                    avatar: avatar,
+                    created_at: new Date().toISOString(),
+                    is_suspended: false
+                  } as unknown as Profile;
+              }
           }
       }
 
@@ -142,7 +149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let accountsQuery = supabase.from('accounts').select('*, profile:profiles(*)');
       
       if (currentProfile?.role !== 'admin') {
-         accountsQuery = accountsQuery.eq('user_id', session.user.id);
+         accountsQuery = accountsQuery.eq('user_id', currentUser.id);
       }
 
       // 3. Fetch remaining data
@@ -167,7 +174,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           category:categories(*),
           profile:created_by(*)
         `).order('date', { ascending: false }).limit(500),
-        supabase.from('notifications').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false })
+        supabase.from('notifications').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
       ]);
 
       if (accountsRes.data) setAccounts(accountsRes.data);
@@ -196,12 +203,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       if (session?.user) {
+        // Add a small delay to ensure DB triggers (if any) have fired, though our upsert handles it
         fetchData();
       } else {
         setProfile(null);
         setAccounts([]);
         setGroupAccounts([]);
         setTransactions([]);
+        setLoading(false);
       }
     });
 

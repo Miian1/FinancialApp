@@ -39,7 +39,10 @@ const Login: React.FC = () => {
     try {
       // Determine redirect URL: use window.location.origin for local dev, 
       // but explicitly use the Netlify URL for production to match Supabase allow lists exactly.
-      const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      // If hostname is localhost or 127.0.0.1, we use origin.
+      // If hostname is anything else (e.g. netlify), we use the specific netlify url to ensure it matches allowed list.
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const redirectUrl = isLocal
         ? window.location.origin
         : 'https://financialapp1.netlify.app';
 
@@ -227,7 +230,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <Layout>{children}</Layout>;
 };
 
-export default function App() {
+const App = () => {
   return (
     <HashRouter>
       <AppProvider>
@@ -250,4 +253,6 @@ export default function App() {
       </AppProvider>
     </HashRouter>
   );
-}
+};
+
+export default App;
