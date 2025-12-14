@@ -37,10 +37,16 @@ const Login: React.FC = () => {
     setLoading(true);
     setMessage(null);
     try {
+      // Determine redirect URL: use window.location.origin for local dev, 
+      // but explicitly use the Netlify URL for production to match Supabase allow lists exactly.
+      const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? window.location.origin
+        : 'https://financialapp1.netlify.app';
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;

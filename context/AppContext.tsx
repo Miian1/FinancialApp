@@ -95,22 +95,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // 1. Fetch Profile first to check role
-      let { data: profileRes } = await supabase
+      let { data: profileRes, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
       
-      // Self-healing: Create profile if missing in DB but user exists in Auth
+      // Self-healing: Create profile if missing in DB but user exists in Auth (e.g. Google Login first time)
       if (!profileRes) {
-          const name = session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
+          // Google often provides 'full_name' or 'name', and 'avatar_url' or 'picture'
+          const meta = session.user.user_metadata || {};
+          const name = meta.name || meta.full_name || session.user.email?.split('@')[0] || 'User';
+          const avatar = meta.avatar_url || meta.picture || null;
+
+          console.log("Creating new profile for user:", session.user.id);
+
           const { error: insertError } = await supabase.from('profiles').insert({
               id: session.user.id,
               email: session.user.email,
               name: name,
               role: 'member',
-              avatar: '',
-              // created_at handled by DB default usually, but good to ensure
+              avatar: avatar,
+              is_suspended: false
           });
 
           if (!insertError) {
@@ -120,10 +126,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   email: session.user.email!,
                   name: name,
                   role: 'member',
-                  avatar: null,
+                  avatar: avatar,
                   created_at: new Date().toISOString(),
                   is_suspended: false
-              } as unknown as Profile; // Cast to bypass strict type check on missing optional fields if any
+              } as unknown as Profile; 
+          } else {
+              console.error("Error creating profile:", insertError);
           }
       }
 
