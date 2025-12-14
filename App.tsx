@@ -40,12 +40,25 @@ const Login: React.FC = () => {
     
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { name: email.split('@')[0], avatar: '' } }
         });
         if (error) throw error;
+
+        // If auto-confirm is enabled, session exists immediately.
+        // We attempt to create the profile row here to ensure it exists before redirection.
+        if (data.user && data.session) {
+            await supabase.from('profiles').insert({
+                id: data.user.id,
+                email: data.user.email,
+                name: email.split('@')[0],
+                role: 'member',
+                avatar: ''
+            });
+        }
+
         setMessage({ type: 'success', text: 'Check your email for the confirmation link!' });
       } else if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({

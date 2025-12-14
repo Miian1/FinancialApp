@@ -95,12 +95,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // 1. Fetch Profile first to check role
-      const { data: profileRes } = await supabase
+      let { data: profileRes } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
       
+      // Self-healing: Create profile if missing in DB but user exists in Auth
+      if (!profileRes) {
+          const name = session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
+          const { error: insertError } = await supabase.from('profiles').insert({
+              id: session.user.id,
+              email: session.user.email,
+              name: name,
+              role: 'member',
+              avatar: '',
+              // created_at handled by DB default usually, but good to ensure
+          });
+
+          if (!insertError) {
+              // Construct a temporary profile object to use immediately
+              profileRes = {
+                  id: session.user.id,
+                  email: session.user.email!,
+                  name: name,
+                  role: 'member',
+                  avatar: null,
+                  created_at: new Date().toISOString(),
+                  is_suspended: false
+              } as unknown as Profile; // Cast to bypass strict type check on missing optional fields if any
+          }
+      }
+
       const currentProfile = profileRes || null;
       setProfile(currentProfile);
 
