@@ -56,13 +56,13 @@ const MobileNavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label
       }`
     }
   >
-    <Icon size={22} />
-    <span className="text-[10px] mt-1">{label}</span>
+    <Icon size={20} />
+    <span className="text-[10px] mt-0.5 font-medium">{label}</span>
   </NavLink>
 );
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile, notifications, theme } = useApp();
+  const { profile, notifications } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMobileNotif, setShowMobileNotif] = useState(false);
@@ -81,12 +81,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   // Scroll to top of main content on route change
   useEffect(() => {
-    // Reset internal container scroll
     if (mainContentRef.current) {
         mainContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
     }
-    // Backup: Reset window scroll (though layout prevents window scroll mostly)
-    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -102,17 +99,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, []);
 
   return (
-    // App Shell: Fixed height, hidden overflow on body. 
-    // This forces 'main' to be the only scrollable area.
-    <div className="h-screen w-full bg-background text-primary font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-300">
+    // App Shell: Fixed height using dvh for mobile browsers
+    <div className="h-[100dvh] w-full bg-background text-primary font-sans flex flex-col md:flex-row overflow-hidden transition-colors duration-300 relative">
       
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} h-full bg-background border-r border-border p-4 transition-all duration-300 ease-in-out flex-shrink-0 relative`}>
-        
-        {/* Collapse Toggle Button */}
+      <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} h-full bg-background border-r border-border p-4 transition-all duration-300 ease-in-out flex-shrink-0 relative z-20`}>
+        {/* Collapse Toggle */}
         <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="absolute -right-3 top-9 bg-surface border border-border text-secondary hover:text-primary rounded-full p-1 shadow-lg z-50 hidden md:flex items-center justify-center hover:scale-110 transition-transform"
+            className="absolute -right-3 top-9 bg-surface border border-border text-secondary hover:text-primary rounded-full p-1 shadow-lg z-50 flex items-center justify-center hover:scale-110 transition-transform"
         >
             {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -171,32 +166,31 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      {/* Not sticky anymore, just part of the flex column above 'main' */}
-      <div className="md:hidden z-50 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+      {/* Mobile Header (Non-sticky, just part of flow) */}
+      <div className="md:hidden z-30 bg-background/80 backdrop-blur-md border-b border-border px-4 py-2 flex items-center justify-between shrink-0 h-14">
          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <LayoutGrid className="text-white" size={20} />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <LayoutGrid className="text-white" size={16} />
             </div>
-            <span className="font-bold text-primary">FamilyFinance</span>
+            <span className="font-bold text-primary text-lg">FamilyFinance</span>
          </div>
          
          <div className="flex items-center gap-3">
              <button 
                 onClick={() => navigate('/settings')} 
-                className="p-1 text-secondary hover:text-primary"
+                className="p-1.5 text-secondary hover:text-primary active:bg-primary/5 rounded-lg"
              >
-                <Settings size={22} />
+                <Settings size={20} />
              </button>
              
              <div className="relative" ref={notifRef}>
                 <button 
                     onClick={() => setShowMobileNotif(!showMobileNotif)} 
-                    className="relative p-1 text-secondary hover:text-primary"
+                    className="relative p-1.5 text-secondary hover:text-primary active:bg-primary/5 rounded-lg"
                 >
-                    <Bell size={24} />
+                    <Bell size={20} />
                     {unreadNotifications > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-background flex items-center justify-center text-[9px] text-white font-bold">
+                      <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-background flex items-center justify-center text-[8px] text-white font-bold">
                         {unreadNotifications}
                       </span>
                     )}
@@ -204,13 +198,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
                 {showMobileNotif && (
                   <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden backdrop-blur-xl animate-fade-in origin-top-right">
-                      <div className="p-4 border-b border-border flex justify-between items-center bg-background/50">
+                      <div className="p-3 border-b border-border flex justify-between items-center bg-background/50">
                             <h4 className="font-bold text-primary text-sm">Notifications</h4>
                             <button onClick={() => setShowMobileNotif(false)}><X size={16} className="text-secondary hover:text-primary"/></button>
                       </div>
                       <div className="max-h-64 overflow-y-auto custom-scrollbar">
                             {recentNotifications.length === 0 ? (
-                                <div className="p-8 text-center text-secondary text-xs">No notifications</div>
+                                <div className="p-6 text-center text-secondary text-xs">No notifications</div>
                             ) : (
                                 recentNotifications.map(n => (
                                     <div 
@@ -222,14 +216,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                           <span className={`text-xs font-bold capitalize ${n.type === 'invite' ? 'text-indigo-400' : 'text-secondary'}`}>{n.type}</span>
                                           <span className="text-[10px] text-secondary group-hover:text-primary">{format(new Date(n.created_at), 'MMM dd')}</span>
                                         </div>
-                                        <p className="text-sm text-secondary group-hover:text-primary line-clamp-2 transition-colors">{n.message}</p>
+                                        <p className="text-xs text-secondary group-hover:text-primary line-clamp-2 leading-snug">{n.message}</p>
                                     </div>
                                 ))
                             )}
                       </div>
                       <button 
                         onClick={() => { setShowMobileNotif(false); navigate('/notifications'); }}
-                        className="w-full p-3 text-center text-sm font-medium text-indigo-400 hover:text-indigo-300 hover:bg-primary/5 transition-colors border-t border-border"
+                        className="w-full p-2.5 text-center text-xs font-medium text-indigo-400 hover:text-indigo-300 hover:bg-primary/5 transition-colors border-t border-border"
                       >
                           See All
                       </button>
@@ -239,26 +233,25 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
          </div>
       </div>
 
-      {/* Main Content Area */}
-      {/* overflow-y-auto enables scrolling within this container */}
+      {/* Main Content Area - Scrollable */}
       <main 
         ref={mainContentRef} 
-        className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-background relative"
+        className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 pb-20 md:pb-8 bg-background relative"
       >
         {children}
       </main>
 
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-lg border-t border-border z-50 px-2 pb-safe">
-        <div className="flex justify-around items-center">
+      {/* Mobile Bottom Nav - Fixed at bottom */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-lg border-t border-border z-40 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+        <div className="flex justify-around items-center h-[60px] px-2">
           <MobileNavItem to="/" icon={LayoutDashboard} label="Home" />
           <MobileNavItem to="/accounts" icon={Wallet} label="Accounts" />
-          <div className="relative -top-5">
+          <div className="relative -top-6">
             <button 
               onClick={() => navigate('/transactions')}
-              className="w-14 h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 text-white"
+              className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 text-white transform active:scale-95 transition-transform"
             >
-              <ArrowRightLeft size={24} />
+              <ArrowRightLeft size={20} />
             </button>
           </div>
           <MobileNavItem to="/chat" icon={MessageCircle} label="Chat" />
