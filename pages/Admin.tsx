@@ -265,8 +265,26 @@ export const Admin: React.FC = () => {
 
   const approveTransaction = async (id: string, accountId: string) => {
       const isGroup = groupAccounts.some(g => g.id === accountId);
-      const table = isGroup ? 'group_transactions' : 'transactions';
-      await supabase.from(table).update({ status: 'completed' }).eq('id', id);
+      const txTable = isGroup ? 'group_transactions' : 'transactions';
+      const accTable = isGroup ? 'group_accounts' : 'accounts';
+
+      // 1. Get Transaction Details to know amount and type
+      const { data: tx } = await supabase.from(txTable).select('*').eq('id', id).single();
+      if (!tx) return;
+
+      // 2. Get Current Account Balance
+      const { data: acc } = await supabase.from(accTable).select('balance').eq('id', accountId).single();
+      if (!acc) return;
+
+      // 3. Calculate New Balance
+      const newBalance = tx.type === 'income' 
+          ? Number(acc.balance) + Number(tx.amount) 
+          : Number(acc.balance) - Number(tx.amount);
+
+      // 4. Update Account Balance and Transaction Status
+      await supabase.from(accTable).update({ balance: newBalance }).eq('id', accountId);
+      await supabase.from(txTable).update({ status: 'completed' }).eq('id', id);
+
       refreshData();
   };
 

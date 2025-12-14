@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { ArrowUpRight, ArrowDownLeft, Wallet, Bell, X, DollarSign, PiggyBank, Filter, ArrowRight, ChevronDown, Check, CreditCard, Users, Layers } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Wallet, Bell, X, DollarSign, PiggyBank, Filter, ArrowRight, ChevronDown, Check, CreditCard, Users, Layers, Activity } from 'lucide-react';
 import { format } from 'date-fns';
 
 const subDays = (date: Date, days: number): Date => { const result = new Date(date); result.setDate(result.getDate() - days); return result; };
@@ -17,10 +17,10 @@ const formatCurrency = (amount: number, showFull: boolean) => {
   return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-interface StatCardProps { title: string; amount: number; subtext?: string; icon: any; badge?: string; badgeColor?: string; color: string; chartData: { value: number }[]; chartColor: string; theme: 'light' | 'dark'; }
+interface StatCardProps { title: string; amount: number; customValue?: string; subtext?: string; icon: any; badge?: string; badgeColor?: string; color: string; chartData: { value: number }[]; chartColor: string; theme: 'light' | 'dark'; }
 
-const StatCard = ({ title, amount, subtext, icon: Icon, badge, badgeColor, color, chartData, chartColor, theme }: StatCardProps) => {
-  const displayAmount = 'Rs ' + formatCurrency(amount, false); 
+const StatCard = ({ title, amount, customValue, subtext, icon: Icon, badge, badgeColor, color, chartData, chartColor, theme }: StatCardProps) => {
+  const displayAmount = customValue || 'Rs ' + formatCurrency(amount, false); 
   const idSafeTitle = title.replace(/\s/g, '');
 
   return (
@@ -37,7 +37,7 @@ const StatCard = ({ title, amount, subtext, icon: Icon, badge, badgeColor, color
         </div>
         <div className="z-10 relative">
         <p className="text-secondary text-[9px] md:text-sm font-medium truncate">{title}</p>
-        <h3 className="text-base md:text-2xl font-bold text-primary mt-0.5 md:mt-1 truncate" title={`Rs ${amount.toLocaleString()}`}>{displayAmount}</h3>
+        <h3 className="text-base md:text-2xl font-bold text-primary mt-0.5 md:mt-1 truncate" title={customValue ? customValue : `Rs ${amount.toLocaleString()}`}>{displayAmount}</h3>
         {subtext && <p className="text-[8px] md:text-xs text-secondary mt-0.5 truncate">{subtext}</p>}
         </div>
         <div className={`absolute bottom-0 left-0 right-0 h-12 md:h-28 opacity-40 pointer-events-none group-hover:opacity-60 transition-opacity ${theme === 'dark' ? 'mix-blend-screen' : 'mix-blend-normal'}`}>
@@ -74,6 +74,14 @@ export const Dashboard: React.FC = () => {
   const relevantTransactions = useMemo(() => { const accountIds = activeAccounts.map(a => a.id); return transactions.filter(t => accountIds.includes(t.account_id)); }, [transactions, activeAccounts]);
   const totalIncome = relevantTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0);
   const totalExpense = relevantTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+  const healthScore = useMemo(() => {
+      if (totalIncome === 0) return totalExpense === 0 ? 50 : 0;
+      const savingsRatio = (totalIncome - totalExpense) / totalIncome;
+      // Map: -1 (debt) to 0, 0 (break even) to 50, 1 (all savings) to 100
+      const score = 50 + (savingsRatio * 50);
+      return Math.max(0, Math.min(100, Math.round(score)));
+  }, [totalIncome, totalExpense]);
 
   const getTrendData = (type: 'balance' | 'income' | 'expense' | 'remaining') => {
       const data = []; let tempBalance = totalBalance; const days = 14;
@@ -143,7 +151,19 @@ export const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
         <StatCard title="My Balance" amount={totalBalance} icon={Wallet} color="indigo" badge="+2.1%" badgeColor="bg-emerald-500/20 text-emerald-400" chartData={balanceTrend} chartColor="#818cf8" theme={theme} />
-        <StatCard title="Remaining Funds" amount={totalBalance - totalExpense} subtext="Income - Expense" icon={PiggyBank} color="amber" badge="Savings" badgeColor="bg-emerald-500/20 text-emerald-400" chartData={remainingTrend} chartColor="#fbbf24" theme={theme} />
+        <StatCard 
+          title="Health Score" 
+          amount={0} 
+          customValue={`${healthScore} / 100`}
+          subtext="Based on spending & saving habits" 
+          icon={Activity} 
+          color="amber" 
+          badge={healthScore >= 70 ? "Healthy" : "Attention"} 
+          badgeColor={healthScore >= 70 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"} 
+          chartData={remainingTrend} 
+          chartColor="#fbbf24" 
+          theme={theme} 
+        />
         <StatCard title="Income" amount={totalIncome} icon={ArrowDownLeft} color="blue" badge="+10.3%" badgeColor="bg-emerald-500/20 text-emerald-400" chartData={incomeTrend} chartColor="#3b82f6" theme={theme} />
         <StatCard title="Expenses" amount={totalExpense} icon={ArrowUpRight} color="rose" badge="-5.8%" badgeColor="bg-rose-500/20 text-rose-400" chartData={expenseTrend} chartColor="#fb7185" theme={theme} />
       </div>

@@ -60,14 +60,46 @@ export const AddTransaction: React.FC = () => {
      e.preventDefault();
      if (!amount || !accountId || !categoryId || !profile) return;
      setSubmitting(true);
+     
      const isGroup = groupAccounts.some(g => g.id === accountId);
      const txTable = isGroup ? 'group_transactions' : 'transactions';
-     const { error } = await supabase.from(txTable).insert({ account_id: accountId, amount: parseFloat(amount), type: type, category_id: categoryId, note: note, created_by: profile.id, status: 'pending' });
-     if (error) { console.error('Error creating transaction:', error); alert('Error creating transaction'); setSubmitting(false); return; }
-     const accountTable = isGroup ? 'group_accounts' : 'accounts';
-     const account = [...accounts, ...groupAccounts].find(a => a.id === accountId);
-     if (account) { const newBalance = type === 'income' ? Number(account.balance) + parseFloat(amount) : Number(account.balance) - parseFloat(amount); await supabase.from(accountTable).update({ balance: newBalance }).eq('id', accountId); }
-     await refreshData(); goBack();
+     
+     // Determine Status:
+     // 1. Personal wallet -> 'completed'
+     // 2. Family Fund & Admin -> 'completed'
+     // 3. Family Fund & Member -> 'pending'
+     const isAdmin = profile.role === 'admin';
+     const initialStatus = !isGroup ? 'completed' : (isAdmin ? 'completed' : 'pending');
+
+     const { error } = await supabase.from(txTable).insert({ 
+         account_id: accountId, 
+         amount: parseFloat(amount), 
+         type: type, 
+         category_id: categoryId, 
+         note: note, 
+         created_by: profile.id, 
+         status: initialStatus 
+     });
+
+     if (error) { 
+         console.error('Error creating transaction:', error); 
+         alert('Error creating transaction'); 
+         setSubmitting(false); 
+         return; 
+     }
+
+     // Only update balance if status is completed immediately
+     if (initialStatus === 'completed') {
+         const accountTable = isGroup ? 'group_accounts' : 'accounts';
+         const account = [...accounts, ...groupAccounts].find(a => a.id === accountId);
+         if (account) { 
+             const newBalance = type === 'income' ? Number(account.balance) + parseFloat(amount) : Number(account.balance) - parseFloat(amount); 
+             await supabase.from(accountTable).update({ balance: newBalance }).eq('id', accountId); 
+         }
+     }
+
+     await refreshData(); 
+     goBack();
   };
 
   const filteredCategories = categories.filter(c => c.type === type);
